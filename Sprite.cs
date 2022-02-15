@@ -22,6 +22,9 @@ namespace GenreShifterProt4.Sprites
         //public float Opacity;
         public float Rotation = 0f;
 
+        public TimeSpan attackTimer = TimeSpan.FromSeconds(0);
+        public float attackFrequency;
+
         public Rectangle Rectangle
         {
             get

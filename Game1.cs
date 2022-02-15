@@ -24,6 +24,9 @@ namespace GenreShifterProt4
         private Sprite[] platforms;
         private List<Enemy> enemies;
         private List<Sword> sword;
+        private List<LazerBeam> redBeams;
+        private List<LazerBeam> greenBeams;
+
 
         SpriteFont font;
         Texture2D scoreBarSprite;
@@ -52,11 +55,22 @@ namespace GenreShifterProt4
         bool hitJump;
 
         string playerLastDirection;
-        float playerLastDirectionNum; // 1 = right, 2 = left, 3 = up, 4 = down
+        //float playerLastDirectionNum; // 1 = right, 2 = left, 3 = up, 4 = down
         private Vector2 swordStartPos;
         private TimeSpan swordTimer = TimeSpan.FromSeconds(0);
         public Texture2D[] swordTextures;
         public int swordTextureNum;
+
+        private Vector2 beamStartPos;
+        private Vector2 greenBeamStartPos;
+        public Texture2D[] redBeamTextures;
+        public Texture2D[] greenBeamTextures;
+        public int redBeamTextureNum;
+        public int greenBeamTextureNum;
+        public int greenBeamDirectionNum; // 1 = right, 2 = left, 3 = up, 4 = down
+        public bool canShoot;
+        public string beamDirection;
+        private TimeSpan shootTimer = TimeSpan.FromSeconds(0);
 
         private GamePadState gamePadState;
         private TouchCollection touchState;
@@ -105,7 +119,7 @@ namespace GenreShifterProt4
         {
             // TODO: Add your initialization logic here
             timeBetweenGames = 15;
-            genreNum = 0;
+            genreNum = 2;
             nextGenre = 1;
 
             fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
@@ -127,6 +141,12 @@ namespace GenreShifterProt4
 
             swordStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 100 - 80));
             swordTextureNum = 0;
+
+            beamStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 83 - 80));
+            greenBeamStartPos = new Vector2((baseScreenSize.X / 2 + 1), baseScreenSize.Y / 2 - 75);
+            redBeamTextureNum = 0;
+            canShoot = true;
+            beamDirection = "left";
 
             continuePressed = false;
             base.Initialize();
@@ -204,6 +224,7 @@ namespace GenreShifterProt4
                     Speed = 0f,
                     Input = virtualGamePad,
                     Direction = "right",
+                    attackFrequency = rnd.Next(1,6),
                     //Opacity = 1f,
                 },
             };
@@ -216,6 +237,22 @@ namespace GenreShifterProt4
                 Content.Load<Texture2D>("Items/adventureSwordUp"),
                 Content.Load<Texture2D>("Items/adventureSwordDown")
             };
+
+            redBeams = new List<LazerBeam>();
+            greenBeams = new List<LazerBeam>();
+
+            redBeamTextures = new Texture2D[2]
+            {
+                Content.Load<Texture2D>("Items/spaceBeamRightLeft"),
+                Content.Load<Texture2D>("Items/spaceBeamUpDown")
+            };
+
+            greenBeamTextures = new Texture2D[2]
+            {
+                Content.Load<Texture2D>("Items/spaceEnemyBeamRightLeft"),
+                Content.Load<Texture2D>("Items/spaceEnemyBeamUpDown")
+            };
+
         }
 
         public void ScalePresentationArea()
@@ -250,6 +287,12 @@ namespace GenreShifterProt4
             foreach (var Sword in sword)
                 Sword.Update(gameTime, sword.ToArray());
 
+            foreach (var Beam in redBeams)
+                Beam.Update(gameTime, redBeams.ToArray());
+
+            foreach (var Beam in greenBeams)
+                Beam.Update(gameTime, greenBeams.ToArray());
+
             HandleInput(gameTime);
 
             foreach (var platform in platforms)
@@ -283,14 +326,133 @@ namespace GenreShifterProt4
             CollisionWithEnemy();
             RegenEnemis();
             ScoreHandler();
-            EnemyMovement();
+            EnemyMovement(gameTime);
             InvisibillityFrames(gameTime);
 
             //Sword Related
             SwordRemover(gameTime);
             SlashingEnemies();
 
+            //Beamssss wtf
+            MoveBeams();
+            ShootCooldown(gameTime);
+            RedBeamsCollision();
+
+            for (int Beam = greenBeams.Count - 1; Beam >= 0; Beam--)
+            {
+                if (greenBeams[Beam].Position.X > (baseScreenSize.X + 1) ||
+                    greenBeams[Beam].Position.X < (baseScreenSize.X - baseScreenSize.X - 51) ||
+                    greenBeams[Beam].Position.Y > (baseScreenSize.Y + 1) ||
+                    greenBeams[Beam].Position.Y < (baseScreenSize.Y - baseScreenSize.Y - 51))
+                {
+                    greenBeams.RemoveAt(Beam);
+                }
+
+                else if (greenBeams[Beam].IsTouchingRight(playerSprite[0]) ||
+                         greenBeams[Beam].IsTouchingLeft(playerSprite[0]) ||
+                         greenBeams[Beam].IsTouchingTop(playerSprite[0]) ||
+                         greenBeams[Beam].IsTouchingBottom(playerSprite[0]))
+                {
+                    playerHP -= 1;
+                    //greenBeams.RemoveAt(Beam);
+                    isInvis = true;
+                    playerSprite[0].Color = Color.Gold;
+                    System.Diagnostics.Debug.WriteLine("ouch");
+                }
+            }
+
+
             base.Update(gameTime);
+        }
+
+        private void RedBeamsCollision()
+        {
+            for (int Beam = redBeams.Count - 1; Beam >= 0; Beam--)
+            {
+                if (redBeams[Beam].Position.X > (baseScreenSize.X + 1) ||
+                    redBeams[Beam].Position.X < -51 ||
+                    redBeams[Beam].Position.Y > (baseScreenSize.Y + 1) ||
+                    redBeams[Beam].Position.Y < -51)
+                {
+                    redBeams.RemoveAt(Beam);
+                }
+
+                else
+                {
+                    //System.Diagnostics.Debug.WriteLine("num of beams is {0}", redBeams.Count);
+                    for (int enemy = enemies.Count - 1; enemy >= 0; enemy--)
+                    {
+                        if (redBeams[Beam].IsTouchingRight(enemies[enemy]) ||
+                            redBeams[Beam].IsTouchingLeft(enemies[enemy]) ||
+                            redBeams[Beam].IsTouchingTop(enemies[enemy]) ||
+                            redBeams[Beam].IsTouchingBottom(enemies[enemy]))
+                        {
+                            enemies.RemoveAt(enemy);
+                            isInvis = true;
+                            playerSprite[0].Color = Color.Gold;
+                            Score += 1;
+                            //redBeams.RemoveAt(Beam);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ShootCooldown(GameTime gameTime)
+        {
+            if (!canShoot)
+            {
+                shootTimer += gameTime.ElapsedGameTime;
+                if (shootTimer.TotalSeconds >= 0.3)
+                {
+                    canShoot = true;
+                    shootTimer = TimeSpan.FromSeconds(0);
+                }
+            }
+        }
+
+        private void MoveBeams()
+        {
+            foreach (var beam in redBeams)
+            {
+                switch (beam.Direction)
+                {
+                    case "left":
+                        beam.Velocity.X = -beam.Speed;
+                        break;
+                    case "right":
+                        beam.Velocity.X = beam.Speed;
+                        break;
+                    case "up":
+                        beam.Velocity.Y = -beam.Speed;
+                        break;
+                    case "down":
+                        beam.Velocity.Y = beam.Speed;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            foreach (var beam in greenBeams)
+            {
+                switch (beam.Direction)
+                {
+                    case "left":
+                        beam.Velocity.X = -beam.Speed;
+                        break;
+                    case "right":
+                        beam.Velocity.X = beam.Speed;
+                        break;
+                    case "up":
+                        beam.Velocity.Y = -beam.Speed;
+                        break;
+                    case "down":
+                        beam.Velocity.Y = beam.Speed;
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private void SlashingEnemies()
@@ -340,16 +502,73 @@ namespace GenreShifterProt4
             }
         }
 
-        private void EnemyMovement()
+        private void EnemyMovement(GameTime gameTime)
         {
-            foreach (var enemy in enemies)
+            switch (allGenres[genreNum].name)
             {
-                if ((enemySpeed >= 1f && enemySpeedChanger > 0) ||
+                case "Platformer":
+                    if ((enemySpeed >= 1f && enemySpeedChanger > 0) ||
                     (enemySpeed <= -1f && enemySpeedChanger < 0))
-                    enemySpeedChanger = enemySpeedChanger * -1;
-                enemySpeed += enemySpeedChanger;
-                enemy.Velocity.Y = enemySpeed;
+                        enemySpeedChanger = enemySpeedChanger * -1;
+                    enemySpeed += enemySpeedChanger;
+                    foreach (var enemy in enemies)
+                    {
+                        enemy.Velocity.Y = enemySpeed;
+                    }
+                    break;
+
+                case "Adventure":
+                    break;
+
+                case "Space Shooter":
+                    foreach (var enemy in enemies)
+                    {
+                        enemy.attackTimer += gameTime.ElapsedGameTime;
+                        if (enemy.attackTimer.TotalSeconds >= enemy.attackFrequency)
+                        {
+                            System.Diagnostics.Debug.WriteLine("shoot");
+                            enemy.attackTimer = TimeSpan.FromSeconds(0);
+                            enemy.attackFrequency = rnd.Next(1, 6);
+                            greenBeamDirectionNum = rnd.Next(1, 5);
+                            switch (greenBeamDirectionNum)
+                            {
+                                case 1:
+                                    beamDirection = "right";
+                                    greenBeamStartPos = new Vector2(enemy.Rectangle.Right + 1, enemy.Rectangle.Y + 67);
+                                    greenBeamTextureNum = 0;
+                                    break;
+                                case 2:
+                                    beamDirection = "left";
+                                    greenBeamStartPos = new Vector2(enemy.Rectangle.Left - 51, enemy.Rectangle.Y + 67);
+                                    greenBeamTextureNum = 0;
+                                    break;
+                                case 3:
+                                    beamDirection = "up";
+                                    greenBeamStartPos = new Vector2(enemy.Rectangle.Left + 67, enemy.Rectangle.Y - 51);
+                                    greenBeamTextureNum = 1;
+                                    break;
+                                case 4:
+                                    beamDirection = "down";
+                                    greenBeamStartPos = new Vector2(enemy.Rectangle.Left + 67, enemy.Rectangle.Bottom + 1);
+                                    greenBeamTextureNum = 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            greenBeams.Add(new LazerBeam(greenBeamTextures[greenBeamTextureNum])
+                            {
+                                Position = greenBeamStartPos,
+                                Color = Color.White,
+                                Direction = beamDirection,
+                                Speed = 15f,
+                            });
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
+            
         }
 
         private void ScoreHandler()
@@ -390,7 +609,7 @@ namespace GenreShifterProt4
                     Speed = 0f,
                     Input = virtualGamePad,
                     Direction = "right",
-                    //Opacity = 1f,
+                    attackFrequency = rnd.Next(1, 6),
                 });
             }
         }
@@ -525,6 +744,8 @@ namespace GenreShifterProt4
                     nextGenre = rnd.Next(0, 3);
                 switcher = 0;
                 sword.Clear();
+                redBeams.Clear();
+                greenBeams.Clear();
                 if (!allGenres[genreNum].canUp)
                     playerInAir = true;
             }
@@ -549,47 +770,59 @@ namespace GenreShifterProt4
                 case "left":
                     playerSprite[0].Velocity.X = -playerSprite[0].Speed;
                     playerLastDirection = "left";
-                    playerLastDirectionNum = 2 * MathHelper.PiOver2;
+                    //playerLastDirectionNum = 2 * MathHelper.PiOver2;
 
                     swordStartPos = new Vector2(playerSprite[0].Rectangle.Left - 151, playerSprite[0].Rectangle.Y + 50);
                     swordTextureNum = 0;
                     foreach (var Sword in sword)
                         Sword.Velocity.X = -Sword.Speed;
+
+                    beamStartPos = new Vector2(playerSprite[0].Rectangle.Left - 51, playerSprite[0].Rectangle.Y + 67);
+                    redBeamTextureNum = 0;
                     break;
 
                 case "right":
                     playerSprite[0].Velocity.X = playerSprite[0].Speed;
                     playerLastDirection = "right";
-                    playerLastDirectionNum = 0f;
+                    //playerLastDirectionNum = 0f;
 
                     swordStartPos = new Vector2(playerSprite[0].Rectangle.Right + 1, playerSprite[0].Rectangle.Y + 50);
                     swordTextureNum = 1;
                     foreach (var Sword in sword)
                         Sword.Velocity.X = Sword.Speed;
+
+                    beamStartPos = new Vector2(playerSprite[0].Rectangle.Right + 1, playerSprite[0].Rectangle.Y + 67);
+                    redBeamTextureNum = 0;
                     break;
 
                 case "up":
                     if (allGenres[genreNum].canUp)
                         playerSprite[0].Velocity.Y = -playerSprite[0].Speed;
                     playerLastDirection = "up";
-                    playerLastDirectionNum = -MathHelper.PiOver2;
+                    //playerLastDirectionNum = -MathHelper.PiOver2;
 
                     swordStartPos = new Vector2(playerSprite[0].Rectangle.X + 50, playerSprite[0].Rectangle.Top - 151);
                     swordTextureNum = 2;
                     foreach (var Sword in sword)
                         Sword.Velocity.Y = -Sword.Speed;
+
+                    beamStartPos = new Vector2(playerSprite[0].Rectangle.Left + 67, playerSprite[0].Rectangle.Y - 51);
+                    redBeamTextureNum = 1;
                     break;
 
                 case "down":
                     if (allGenres[genreNum].canUp)
                         playerSprite[0].Velocity.Y = playerSprite[0].Speed;
                     playerLastDirection = "down";
-                    playerLastDirectionNum = MathHelper.PiOver2;
+                    //playerLastDirectionNum = MathHelper.PiOver2;
 
                     swordStartPos = new Vector2(playerSprite[0].Rectangle.X + 50, playerSprite[0].Rectangle.Bottom + 1);
                     swordTextureNum = 3;
                     foreach (var Sword in sword)
                         Sword.Velocity.Y = Sword.Speed;
+
+                    beamStartPos = new Vector2(playerSprite[0].Rectangle.Left + 67, playerSprite[0].Rectangle.Bottom + 1);
+                    redBeamTextureNum = 1;
                     break;
 
                 case "action":
@@ -621,6 +854,20 @@ namespace GenreShifterProt4
                                     Rotation = 0f,
                                     //Opacity = 1f,
                                 });
+                            }
+                            break;
+                        case "Shoot":
+                            if (canShoot)
+                            {
+                                redBeams.Add(new LazerBeam(redBeamTextures[redBeamTextureNum])
+                                {
+                                    Position = beamStartPos,
+                                    Color = Color.White,
+                                    Direction = playerLastDirection,
+                                    Speed = 15f,
+                                });
+                                canShoot = false;
+                                System.Diagnostics.Debug.WriteLine("pew pew");
                             }
                             break;
                         default:
@@ -661,9 +908,14 @@ namespace GenreShifterProt4
                 whichBtn = "up";
             else if (gamePadState.IsButtonDown(Buttons.DPadDown))
                 whichBtn = "down";
-            else if (gamePadState.IsButtonDown(Buttons.A))
+            if (gamePadState.IsButtonDown(Buttons.A))
                 whichBtn = "action";
-            else
+
+            if (!gamePadState.IsButtonDown(Buttons.DPadLeft) &&
+                !gamePadState.IsButtonDown(Buttons.DPadRight) &&
+                !gamePadState.IsButtonDown(Buttons.DPadUp) &&
+                !gamePadState.IsButtonDown(Buttons.DPadDown) &&
+                !gamePadState.IsButtonDown(Buttons.A))
                 whichBtn = "none";
         }
 
@@ -705,10 +957,15 @@ namespace GenreShifterProt4
                 sprite.Draw(_spriteBatch);
             foreach (var sprite in sword)
                 sprite.Draw(_spriteBatch);
-            
+            foreach (var sprite in redBeams)
+                sprite.Draw(_spriteBatch);
+            foreach (var sprite in greenBeams)
+                sprite.Draw(_spriteBatch);
+
+
 
             _spriteBatch.Draw(scoreBarSprite, new Vector2(0, 0), Color.Black);
-            _spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.White);
+            _spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.Red);
             //_spriteBatch.DrawString(font, "NEXT GENRE:", new Vector2((widthHalf + 100), 0), null, Color.White, 0f, 0.5f);
             _spriteBatch.DrawString(font, "SCORE:"+ Score,(scoreArea - scoreSize), Color.White);
             _spriteBatch.Draw(playerHPTextures[playerHP], healthVector2, Color.White);

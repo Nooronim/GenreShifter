@@ -18,7 +18,7 @@ namespace GenreShifterProt4.Sprites
         public override void Update(GameTime gameTime, Sprite[] enemies)
         {
             Position += Velocity;
-            Velocity = Vector2.Zero;
+            //Velocity = Vector2.Zero;
         }
     }
 }

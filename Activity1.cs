@@ -20,6 +20,7 @@ namespace GenreShifterProt4
         private Game1 _game;
         private View _view;
 
+
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);

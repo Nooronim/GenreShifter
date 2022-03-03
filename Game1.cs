@@ -90,6 +90,9 @@ namespace GenreShifterProt4
         public float enemySpeed;
 
         public Vector2 enemyPos;
+
+        public bool isWalking;
+
         public Rectangle enemyRect
         {
             get
@@ -119,7 +122,7 @@ namespace GenreShifterProt4
         {
             // TODO: Add your initialization logic here
             timeBetweenGames = 15;
-            genreNum = 2;
+            genreNum = 0;
             nextGenre = 1;
 
             fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
@@ -147,6 +150,8 @@ namespace GenreShifterProt4
             redBeamTextureNum = 0;
             canShoot = true;
             beamDirection = "left";
+
+            isWalking = false;
 
             continuePressed = false;
             base.Initialize();
@@ -185,7 +190,7 @@ namespace GenreShifterProt4
                 {
                     Position = new Vector2((_graphics.GraphicsDevice.Viewport.Width/2 - 75), (_graphics.GraphicsDevice.Viewport.Height-150-80)),
                     Color = Color.White,
-                    Speed = 5f,
+                    Speed = 7f,
                     Input = virtualGamePad,
                     Direction = "right",
                     //Opacity = 100f,
@@ -328,6 +333,7 @@ namespace GenreShifterProt4
             ScoreHandler();
             EnemyMovement(gameTime);
             InvisibillityFrames(gameTime);
+            EnemyCollisionWithBorder();
 
             //Sword Related
             SwordRemover(gameTime);
@@ -337,7 +343,34 @@ namespace GenreShifterProt4
             MoveBeams();
             ShootCooldown(gameTime);
             RedBeamsCollision();
+            GreenBeamsCollision();
 
+            base.Update(gameTime);
+        }
+
+        private void EnemyCollisionWithBorder()
+        {
+            foreach (var enemy in enemies)
+            {
+                if (enemy.Position.X < -150f)
+                    enemy.Position.X = _graphics.GraphicsDevice.Viewport.Width;
+                if (enemy.Position.X > _graphics.GraphicsDevice.Viewport.Width)
+                    enemy.Position.X = -150f;
+
+                if (enemy.Rectangle.Top <= 150f)
+                {
+                    enemy.Velocity.Y = 0;
+                    enemy.Position.Y = 151f;
+                }
+                if (enemy.Rectangle.Bottom > _graphics.GraphicsDevice.Viewport.Height - 80)
+                {
+                    enemy.Position.Y = _graphics.GraphicsDevice.Viewport.Height - 150 - 80;
+                }
+            }
+        }
+
+        private void GreenBeamsCollision()
+        {
             for (int Beam = greenBeams.Count - 1; Beam >= 0; Beam--)
             {
                 if (greenBeams[Beam].Position.X > (baseScreenSize.X + 1) ||
@@ -354,15 +387,12 @@ namespace GenreShifterProt4
                          greenBeams[Beam].IsTouchingBottom(playerSprite[0]))
                 {
                     playerHP -= 1;
-                    //greenBeams.RemoveAt(Beam);
+                    greenBeams.RemoveAt(Beam);
                     isInvis = true;
                     playerSprite[0].Color = Color.Gold;
                     System.Diagnostics.Debug.WriteLine("ouch");
                 }
             }
-
-
-            base.Update(gameTime);
         }
 
         private void RedBeamsCollision()
@@ -391,7 +421,8 @@ namespace GenreShifterProt4
                             isInvis = true;
                             playerSprite[0].Color = Color.Gold;
                             Score += 1;
-                            //redBeams.RemoveAt(Beam);
+                            redBeams.RemoveAt(Beam);
+                            enemy = 0;
                         }
                     }
                 }
@@ -518,6 +549,48 @@ namespace GenreShifterProt4
                     break;
 
                 case "Adventure":
+                    foreach (var enemy in enemies)
+                    {
+                        enemy.attackTimer += gameTime.ElapsedGameTime;
+                        if (enemy.attackTimer.TotalSeconds >= enemy.attackFrequency)
+                        {
+                            enemy.attackTimer = TimeSpan.FromSeconds(0);
+                            enemy.attackFrequency = rnd.Next(1, 6);
+                            if (isWalking)
+                            {
+                                enemySpeed = 0;
+                                enemy.Velocity = Vector2.Zero;
+                                isWalking = false;
+                            }
+                            else if (!isWalking)
+                            {
+                                greenBeamDirectionNum = rnd.Next(1, 5);
+                                enemySpeed = rnd.Next(5, 16);
+                                switch (greenBeamDirectionNum)
+                                {
+                                    case 1:
+                                        beamDirection = "right";
+                                        enemy.Velocity.X = enemySpeed;
+                                        break;
+                                    case 2:
+                                        beamDirection = "left";
+                                        enemy.Velocity.X = -enemySpeed;
+                                        break;
+                                    case 3:
+                                        beamDirection = "up";
+                                        enemy.Velocity.Y = -enemySpeed;
+                                        break;
+                                    case 4:
+                                        beamDirection = "down";
+                                        enemy.Velocity.Y = enemySpeed;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                isWalking = true;
+                            }
+                        }
+                    }
                     break;
 
                 case "Space Shooter":
@@ -746,6 +819,9 @@ namespace GenreShifterProt4
                 sword.Clear();
                 redBeams.Clear();
                 greenBeams.Clear();
+                enemySpeed = 0;
+                foreach (var enemy in enemies)
+                    enemy.Velocity = Vector2.Zero;
                 if (!allGenres[genreNum].canUp)
                     playerInAir = true;
             }

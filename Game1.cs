@@ -14,19 +14,35 @@ namespace GenreShifterProt4
 {
     public class Game1 : Microsoft.Xna.Framework.Game
     {
+
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         Vector2 baseScreenSize = new Vector2(800, 480);
         private Matrix globalTransformation;
         int backbufferWidth, backbufferHeight;
 
-        private Sprite[] playerSprite;
-        private Sprite[] platforms;
-        private List<Enemy> enemies;
-        private List<Sword> sword;
-        private List<LazerBeam> redBeams;
-        private List<LazerBeam> greenBeams;
+        public string[] screens = new string[] { "mainScreen", "gameScreen", "endScreen", "scoreboardScreen" };
+        public int screenNum = 0; //0-4 depending on above array ^^
 
+        //for mainScreen
+        Rectangle startBtnRect
+        {
+            get
+            {
+                return new Rectangle((_graphics.GraphicsDevice.Viewport.Width / 2 - 128), (_graphics.GraphicsDevice.Viewport.Height / 2 - 64), 256, 128);
+            }
+        }
+        public Button startBtn;
+
+
+
+        //for gameScreen
+        public Sprite[] playerSprite;
+        public Sprite[] platforms;
+        public List<Enemy> enemies;
+        public List<Sword> sword;
+        public List<LazerBeam> redBeams;
+        public List<LazerBeam> greenBeams;
 
         SpriteFont font;
         Texture2D scoreBarSprite;
@@ -56,13 +72,13 @@ namespace GenreShifterProt4
 
         string playerLastDirection;
         //float playerLastDirectionNum; // 1 = right, 2 = left, 3 = up, 4 = down
-        private Vector2 swordStartPos;
-        private TimeSpan swordTimer = TimeSpan.FromSeconds(0);
+        public Vector2 swordStartPos;
+        public TimeSpan swordTimer = TimeSpan.FromSeconds(0);
         public Texture2D[] swordTextures;
         public int swordTextureNum;
 
-        private Vector2 beamStartPos;
-        private Vector2 greenBeamStartPos;
+        public Vector2 beamStartPos;
+        public Vector2 greenBeamStartPos;
         public Texture2D[] redBeamTextures;
         public Texture2D[] greenBeamTextures;
         public int redBeamTextureNum;
@@ -70,19 +86,19 @@ namespace GenreShifterProt4
         public int greenBeamDirectionNum; // 1 = right, 2 = left, 3 = up, 4 = down
         public bool canShoot;
         public string beamDirection;
-        private TimeSpan shootTimer = TimeSpan.FromSeconds(0);
+        public TimeSpan shootTimer = TimeSpan.FromSeconds(0);
 
-        private GamePadState gamePadState;
-        private TouchCollection touchState;
-        private VirtualGamePad virtualGamePad;
-        private string whichBtn;
-        private bool continuePressed;
+        public GamePadState gamePadState;
+        public TouchCollection touchState;
+        public VirtualGamePad virtualGamePad;
+        public string whichBtn;
+        public bool continuePressed;
 
         public int playerHP;
         Texture2D[] playerHPTextures;
-        private bool wasContinuePressed;
-        private TimeSpan invisFramesTimer = TimeSpan.FromSeconds(0);
-        private bool isInvis;
+        public bool wasContinuePressed;
+        public TimeSpan invisFramesTimer = TimeSpan.FromSeconds(0);
+        public bool isInvis;
 
 
         public int numOfEnemies;
@@ -120,40 +136,90 @@ namespace GenreShifterProt4
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-            timeBetweenGames = 15;
-            genreNum = 0;
-            nextGenre = 1;
+            switch (screens[screenNum])
+            {
+                case "mainScreen":
+                    break;
 
-            fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
-            fakeSeconds = 1;
-            switcher = 0;
+                case "gameScreen":
+                    timeBetweenGames = 15;
+                    genreNum = 0;
+                    nextGenre = 1;
 
-            //playerJumpHelper = 0;
-            playerInAir = false;
-            playerJumpingSpeed = 0;
-            playerOnPlat = new bool[2] { false, false };
-            hitJump = false;
+                    fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+                    fakeSeconds = 1;
+                    switcher = 0;
 
-            playerHP = 3;
-            isInvis = false;
+                    //playerJumpHelper = 0;
+                    playerInAir = false;
+                    playerJumpingSpeed = 0;
+                    playerOnPlat = new bool[2] { false, false };
+                    hitJump = false;
 
-            numOfEnemies = 1;
-            enemySpeedChanger = 0.03f;
-            enemySpeed = 0;
+                    playerHP = 3;
+                    isInvis = false;
 
-            swordStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 100 - 80));
-            swordTextureNum = 0;
+                    numOfEnemies = 1;
+                    enemySpeedChanger = 0.03f;
+                    enemySpeed = 0;
 
-            beamStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 83 - 80));
-            greenBeamStartPos = new Vector2((baseScreenSize.X / 2 + 1), baseScreenSize.Y / 2 - 75);
-            redBeamTextureNum = 0;
-            canShoot = true;
-            beamDirection = "left";
+                    swordStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 100 - 80));
+                    swordTextureNum = 0;
 
-            isWalking = false;
+                    beamStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 83 - 80));
+                    greenBeamStartPos = new Vector2((baseScreenSize.X / 2 + 1), baseScreenSize.Y / 2 - 75);
+                    redBeamTextureNum = 0;
+                    canShoot = true;
+                    beamDirection = "left";
 
-            continuePressed = false;
+                    isWalking = false;
+
+                    continuePressed = false;
+                    break;
+
+                case "endScreen":
+
+                    break;
+
+                case "scoreboardScreen":
+
+                    break;
+            }
+
+            //timeBetweenGames = 15;
+            //genreNum = 0;
+            //nextGenre = 1;
+
+            //fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+            //fakeSeconds = 1;
+            //switcher = 0;
+
+            ////playerJumpHelper = 0;
+            //playerInAir = false;
+            //playerJumpingSpeed = 0;
+            //playerOnPlat = new bool[2] { false, false };
+            //hitJump = false;
+
+            //playerHP = 3;
+            //isInvis = false;
+
+            //numOfEnemies = 1;
+            //enemySpeedChanger = 0.03f;
+            //enemySpeed = 0;
+
+            //swordStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 100 - 80));
+            //swordTextureNum = 0;
+
+            //beamStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 83 - 80));
+            //greenBeamStartPos = new Vector2((baseScreenSize.X / 2 + 1), baseScreenSize.Y / 2 - 75);
+            //redBeamTextureNum = 0;
+            //canShoot = true;
+            //beamDirection = "left";
+
+            //isWalking = false;
+
+            //continuePressed = false;
+
             base.Initialize();
         }
 
@@ -258,6 +324,8 @@ namespace GenreShifterProt4
                 Content.Load<Texture2D>("Items/spaceEnemyBeamUpDown")
             };
 
+            //main screen
+            startBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/tempStartButtonUnPressed"), Content.Load<Texture2D>("MainScreen/tempStartButtonPressed"), startBtnRect);
         }
 
         public void ScalePresentationArea()
@@ -277,75 +345,104 @@ namespace GenreShifterProt4
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            //pageMgr.Update(gameTime, this);
+
             if (backbufferHeight != GraphicsDevice.PresentationParameters.BackBufferHeight ||
                backbufferWidth != GraphicsDevice.PresentationParameters.BackBufferWidth)
                 ScalePresentationArea();
 
-            TimerAndGenreChange(gameTime);
-
-            foreach (var sprite in playerSprite)
-                sprite.Update(gameTime, playerSprite);
-
-            foreach (var enemy in enemies)
-                enemy.Update(gameTime, enemies.ToArray());
-
-            foreach (var Sword in sword)
-                Sword.Update(gameTime, sword.ToArray());
-
-            foreach (var Beam in redBeams)
-                Beam.Update(gameTime, redBeams.ToArray());
-
-            foreach (var Beam in greenBeams)
-                Beam.Update(gameTime, greenBeams.ToArray());
-
-            HandleInput(gameTime);
-
-            foreach (var platform in platforms)
-                platform._texture = allGenres[genreNum].platform;
-
-            foreach (var enemy in enemies)
-                enemy._texture = allGenres[genreNum].enemy;
-
-            foreach (var sprite in playerSprite)
+            switch (screens[screenNum])
             {
-                if (sprite.Velocity != Vector2.Zero)
-                    virtualGamePad.NotifyPlayerIsMoving();
+                case "mainScreen":
+                    touchState = TouchPanel.GetState();
+                    gamePadState = startBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    startBtn.Update(gameTime);
+
+                    if (startBtn.isReleasd)
+                    {
+                        screenNum = 1;
+                        Initialize();
+                    }
+                    break;
+
+                case "gameScreen":
+                    TimerAndGenreChange(gameTime);
+
+                    foreach (var sprite in playerSprite)
+                        sprite.Update(gameTime, playerSprite);
+
+                    foreach (var enemy in enemies)
+                        enemy.Update(gameTime, enemies.ToArray());
+
+                    foreach (var Sword in sword)
+                        Sword.Update(gameTime, sword.ToArray());
+
+                    foreach (var Beam in redBeams)
+                        Beam.Update(gameTime, redBeams.ToArray());
+
+                    foreach (var Beam in greenBeams)
+                        Beam.Update(gameTime, greenBeams.ToArray());
+
+                    HandleInput(gameTime);
+
+                    foreach (var platform in platforms)
+                        platform._texture = allGenres[genreNum].platform;
+
+                    foreach (var enemy in enemies)
+                        enemy._texture = allGenres[genreNum].enemy;
+
+                    foreach (var sprite in playerSprite)
+                    {
+                        if (sprite.Velocity != Vector2.Zero)
+                            virtualGamePad.NotifyPlayerIsMoving();
+                    }
+
+
+                    //Player Movement
+                    CollisionWithBorders();
+                    playerSprite[0].Direction = playerLastDirection;
+                    CollisionWithPlatform();
+                    if (!hitJump)
+                    {
+                        if (playerOnPlat[0] || playerOnPlat[1])
+                            playerInAir = false;
+                        else
+                            playerInAir = true;
+                    }
+                    if (playerInAir && (allGenres[genreNum].canUp == false))
+                        PlayerJump();
+
+                    //Enemy Related
+                    CollisionWithEnemy();
+                    RegenEnemis();
+                    ScoreHandler();
+                    EnemyMovement(gameTime);
+                    InvisibillityFrames(gameTime);
+                    EnemyCollisionWithBorder();
+
+                    //Sword Related
+                    SwordRemover(gameTime);
+                    SlashingEnemies();
+
+                    //Beamssss wtf
+                    MoveBeams();
+                    ShootCooldown(gameTime);
+                    RedBeamsCollision();
+                    GreenBeamsCollision();
+                    break;
+
+                case "endScreen":
+
+                    break;
+
+                case "scoreboardScreen":
+
+                    break;
             }
 
+           
 
-            //Player Movement
-            CollisionWithBorders();
-            playerSprite[0].Direction = playerLastDirection;
-            CollisionWithPlatform();
-            if (!hitJump)
-            {
-                if (playerOnPlat[0] || playerOnPlat[1])
-                    playerInAir = false;
-                else
-                    playerInAir = true;
-            }
-            if (playerInAir && (allGenres[genreNum].canUp == false))
-                PlayerJump();
-
-            //Enemy Related
-            CollisionWithEnemy();
-            RegenEnemis();
-            ScoreHandler();
-            EnemyMovement(gameTime);
-            InvisibillityFrames(gameTime);
-            EnemyCollisionWithBorder();
-
-            //Sword Related
-            SwordRemover(gameTime);
-            SlashingEnemies();
-
-            //Beamssss wtf
-            MoveBeams();
-            ShootCooldown(gameTime);
-            RedBeamsCollision();
-            GreenBeamsCollision();
-
-            base.Update(gameTime);
+            //base.Update(gameTime);
         }
 
         private void EnemyCollisionWithBorder()
@@ -961,12 +1058,24 @@ namespace GenreShifterProt4
 
             // Perform the appropriate action to advance the game and
             // to get the player back to playing.
-            if (!wasContinuePressed && continuePressed)
+            //if (!wasContinuePressed && continuePressed)
+            //{
+            //    if (playerHP == 0)
+            //    {
+            //        //do game over
+            //        //test
+            //        screenNum = 0;
+            //        Initialize();
+            //        //
+            //    }
+            //}
+            if (playerHP == 0)
             {
-                if (playerHP == 0)
-                {
-                    //do game over
-                }
+                //do game over
+                //test
+                screenNum = 0;
+                Initialize();
+                //
             }
 
             wasContinuePressed = continuePressed;
@@ -1008,51 +1117,118 @@ namespace GenreShifterProt4
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-            // TODO: Add your drawing code here
+            GraphicsDevice.Clear(Color.Black);
+            //new Color(114, 132, 255)
 
-            var widthHalf = _graphics.GraphicsDevice.Viewport.Width / 2;
-            var heightMax = _graphics.GraphicsDevice.Viewport.Height;
-            var heightHalf = heightMax / 2;
-            var timerSize = new Vector2(font.MeasureString(fakeTime[switcher].ToString()).X / 2, font.MeasureString(fakeTime[switcher].ToString()).Y / 2);
-            var timerArea = new Vector2(widthHalf, 75);
-            var scoreSize = new Vector2(0, font.MeasureString("SCORE").Y / 2);
-            var scoreArea = new Vector2(50, 75);
-            var healthVector2 = new Vector2((_graphics.GraphicsDevice.Viewport.Width - 366), 0);
-            var nextVector2 = new Vector2((healthVector2.X - smallFont.MeasureString("Next:").X - 100), (scoreArea.Y - scoreSize.Y));
-            var nextGenreVector2 = new Vector2( (nextVector2.X + (smallFont.MeasureString("Next:").X / 2) - (smallFont.MeasureString(allGenres[nextGenre].name).X / 2)), ((timerArea - timerSize).Y + font.MeasureString(fakeTime[switcher].ToString()).Y - smallFont.MeasureString(allGenres[nextGenre].name).Y));
+            //pageMgr.Draw(this);
 
-            _spriteBatch.Begin();
-            _spriteBatch.Draw(allGenres[genreNum].background, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+            switch (screens[screenNum])
+            {
+                case "mainScreen":
 
-            foreach (var sprite in platforms)
-                sprite.Draw(_spriteBatch);
-            foreach (var sprite in enemies)
-                sprite.Draw(_spriteBatch);
-            foreach (var sprite in playerSprite)
-                sprite.Draw(_spriteBatch);
-            foreach (var sprite in sword)
-                sprite.Draw(_spriteBatch);
-            foreach (var sprite in redBeams)
-                sprite.Draw(_spriteBatch);
-            foreach (var sprite in greenBeams)
-                sprite.Draw(_spriteBatch);
+                    _spriteBatch.Begin();
+
+                    startBtn.Draw(_spriteBatch);
+
+                    _spriteBatch.End();
+                    break;
+
+                case "gameScreen":
+                    var widthHalf = _graphics.GraphicsDevice.Viewport.Width / 2;
+                    var heightMax = _graphics.GraphicsDevice.Viewport.Height;
+                    var heightHalf = heightMax / 2;
+                    var timerSize = new Vector2(font.MeasureString(fakeTime[switcher].ToString()).X / 2, font.MeasureString(fakeTime[switcher].ToString()).Y / 2);
+                    var timerArea = new Vector2(widthHalf, 75);
+                    var scoreSize = new Vector2(0, font.MeasureString("SCORE").Y / 2);
+                    var scoreArea = new Vector2(50, 75);
+                    var healthVector2 = new Vector2((_graphics.GraphicsDevice.Viewport.Width - 366), 0);
+                    var nextVector2 = new Vector2((healthVector2.X - smallFont.MeasureString("Next:").X - 100), (scoreArea.Y - scoreSize.Y));
+                    var nextGenreVector2 = new Vector2((nextVector2.X + (smallFont.MeasureString("Next:").X / 2) - (smallFont.MeasureString(allGenres[nextGenre].name).X / 2)), ((timerArea - timerSize).Y + font.MeasureString(fakeTime[switcher].ToString()).Y - smallFont.MeasureString(allGenres[nextGenre].name).Y));
+
+                    _spriteBatch.Begin();
+                    _spriteBatch.Draw(allGenres[genreNum].background, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+
+                    foreach (var sprite in platforms)
+                        sprite.Draw(_spriteBatch);
+                    foreach (var sprite in enemies)
+                        sprite.Draw(_spriteBatch);
+                    foreach (var sprite in playerSprite)
+                        sprite.Draw(_spriteBatch);
+                    foreach (var sprite in sword)
+                        sprite.Draw(_spriteBatch);
+                    foreach (var sprite in redBeams)
+                        sprite.Draw(_spriteBatch);
+                    foreach (var sprite in greenBeams)
+                        sprite.Draw(_spriteBatch);
 
 
 
-            _spriteBatch.Draw(scoreBarSprite, new Vector2(0, 0), Color.Black);
-            _spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.Red);
-            //_spriteBatch.DrawString(font, "NEXT GENRE:", new Vector2((widthHalf + 100), 0), null, Color.White, 0f, 0.5f);
-            _spriteBatch.DrawString(font, "SCORE:"+ Score,(scoreArea - scoreSize), Color.White);
-            _spriteBatch.Draw(playerHPTextures[playerHP], healthVector2, Color.White);
-            _spriteBatch.DrawString(smallFont, "Next:", nextVector2, Color.White);
-            _spriteBatch.DrawString(smallFont, allGenres[nextGenre].name, nextGenreVector2, Color.White);
+                    _spriteBatch.Draw(scoreBarSprite, new Vector2(0, 0), Color.Black);
+                    _spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.Red);
+                    //game._spriteBatch.DrawString(font, "NEXT GENRE:", new Vector2((widthHalf + 100), 0), null, Color.White, 0f, 0.5f);
+                    _spriteBatch.DrawString(font, "SCORE:" + Score, (scoreArea - scoreSize), Color.White);
+                    _spriteBatch.Draw(playerHPTextures[playerHP], healthVector2, Color.White);
+                    _spriteBatch.DrawString(smallFont, "Next:", nextVector2, Color.White);
+                    _spriteBatch.DrawString(smallFont, allGenres[nextGenre].name, nextGenreVector2, Color.White);
 
 
-            if (touchState.IsConnected)
-                virtualGamePad.Draw(_spriteBatch);
+                    if (touchState.IsConnected)
+                        virtualGamePad.Draw(_spriteBatch);
 
-            _spriteBatch.End();
+                    _spriteBatch.End();
+                    break;
+
+                case "endScreen":
+
+                    break;
+
+                case "scoreboardScreen":
+
+                    break;
+            }
+
+            //var widthHalf = _graphics.GraphicsDevice.Viewport.Width / 2;
+            //var heightMax = _graphics.GraphicsDevice.Viewport.Height;
+            //var heightHalf = heightMax / 2;
+            //var timerSize = new Vector2(font.MeasureString(fakeTime[switcher].ToString()).X / 2, font.MeasureString(fakeTime[switcher].ToString()).Y / 2);
+            //var timerArea = new Vector2(widthHalf, 75);
+            //var scoreSize = new Vector2(0, font.MeasureString("SCORE").Y / 2);
+            //var scoreArea = new Vector2(50, 75);
+            //var healthVector2 = new Vector2((_graphics.GraphicsDevice.Viewport.Width - 366), 0);
+            //var nextVector2 = new Vector2((healthVector2.X - smallFont.MeasureString("Next:").X - 100), (scoreArea.Y - scoreSize.Y));
+            //var nextGenreVector2 = new Vector2( (nextVector2.X + (smallFont.MeasureString("Next:").X / 2) - (smallFont.MeasureString(allGenres[nextGenre].name).X / 2)), ((timerArea - timerSize).Y + font.MeasureString(fakeTime[switcher].ToString()).Y - smallFont.MeasureString(allGenres[nextGenre].name).Y));
+
+            //_spriteBatch.Begin();
+            //_spriteBatch.Draw(allGenres[genreNum].background, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+
+            //foreach (var sprite in platforms)
+            //    sprite.Draw(_spriteBatch);
+            //foreach (var sprite in enemies)
+            //    sprite.Draw(_spriteBatch);
+            //foreach (var sprite in playerSprite)
+            //    sprite.Draw(_spriteBatch);
+            //foreach (var sprite in sword)
+            //    sprite.Draw(_spriteBatch);
+            //foreach (var sprite in redBeams)
+            //    sprite.Draw(_spriteBatch);
+            //foreach (var sprite in greenBeams)
+            //    sprite.Draw(_spriteBatch);
+
+
+
+            //_spriteBatch.Draw(scoreBarSprite, new Vector2(0, 0), Color.Black);
+            //_spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.Red);
+            ////game._spriteBatch.DrawString(font, "NEXT GENRE:", new Vector2((widthHalf + 100), 0), null, Color.White, 0f, 0.5f);
+            //_spriteBatch.DrawString(font, "SCORE:"+ Score,(scoreArea - scoreSize), Color.White);
+            //_spriteBatch.Draw(playerHPTextures[playerHP], healthVector2, Color.White);
+            //_spriteBatch.DrawString(smallFont, "Next:", nextVector2, Color.White);
+            //_spriteBatch.DrawString(smallFont, allGenres[nextGenre].name, nextGenreVector2, Color.White);
+
+
+            //if (touchState.IsConnected)
+            //    virtualGamePad.Draw(_spriteBatch);
+
+            //_spriteBatch.End();
 
             base.Draw(gameTime);
         }

@@ -2,7 +2,9 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
+using Android.Content;
 using Microsoft.Xna.Framework;
+
 
 namespace GenreShifterProt4
 {
@@ -20,10 +22,11 @@ namespace GenreShifterProt4
         private Game1 _game;
         private View _view;
 
-
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
+
+            RegisterReceiver(PowerStatus._batteryStatusReciever, new IntentFilter(Intent.ActionBatteryChanged));
 
             _game = new Game1();
             _view = _game.Services.GetService(typeof(View)) as View;
@@ -31,5 +34,6 @@ namespace GenreShifterProt4
             SetContentView(_view);
             _game.Run();
         }
+
     }
 }

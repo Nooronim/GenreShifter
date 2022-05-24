@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Input.Touch;
-using Microsoft.Xna.Framework.Media;
+﻿using GenreShifterProt4.Sprites;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Input.Touch;
+using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Audio;
 using System;
-using GenreShifterProt4.Sprites;
-using System.IO;
-using Microsoft.Xna.Framework.Content;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace GenreShifterProt4
 {
@@ -21,7 +22,12 @@ namespace GenreShifterProt4
         private Matrix globalTransformation;
         int backbufferWidth, backbufferHeight;
 
-        public string[] screens = new string[] { "mainScreen", "gameScreen", "endScreen", "scoreboardScreen" };
+        FireBaseHelper fireBaseHelper;
+        public List<PlayerStats> Stats;
+        PlayerStats thisPlayerStats;
+        public char[] playerName;
+
+        public string[] screens = new string[] { "mainScreen", "gameScreen", "endScreen", "scoreboardScreen", "infoScreen" };
         public int screenNum = 0; //0-4 depending on above array ^^
 
         //for mainScreen
@@ -29,14 +35,134 @@ namespace GenreShifterProt4
         {
             get
             {
-                return new Rectangle((_graphics.GraphicsDevice.Viewport.Width / 2 - 128), (_graphics.GraphicsDevice.Viewport.Height / 2 - 64), 256, 128);
+                return new Rectangle((_graphics.GraphicsDevice.Viewport.Width / 2 - 238), (_graphics.GraphicsDevice.Viewport.Height - 370), 476, 222);
             }
         }
         public Button startBtn;
+        Rectangle infoBtnRect
+        {
+            get
+            {
+                return new Rectangle((_graphics.GraphicsDevice.Viewport.Width / 2 + 268), (_graphics.GraphicsDevice.Viewport.Height - 350), 216, 222);
+            }
+        }
+        public Button infoBtn;
+        Rectangle scoreBtnRect
+        {
+            get
+            {
+                return new Rectangle((_graphics.GraphicsDevice.Viewport.Width / 2 - 484), (_graphics.GraphicsDevice.Viewport.Height - 350), 216, 222);
+            }
+        }
+        public Button scoreBtn;
+        Texture2D mainScreenBG;
+        public float playerTextureScale;
+        public float playerTextureEnlarger;
+        Song mainScreenBGM;
+
+        //for endScreen
+        Texture2D endScreenBG;
+        Song endScreenBGM;
+
+        Rectangle homeBtnRect
+        {
+            get
+            {
+                return new Rectangle(_graphics.GraphicsDevice.Viewport.Width / 2 - 75, _graphics.GraphicsDevice.Viewport.Height - 183, 145, 183);
+            }
+        }
+        public Button homeBtn;
+        Rectangle playAgainBtnRect
+        {
+            get
+            {
+                return new Rectangle(_graphics.GraphicsDevice.Viewport.Width / 2 + 120, _graphics.GraphicsDevice.Viewport.Height - 200, 145, 183);
+            }
+        }
+        public Button playAgainBtn;
+        Rectangle endScoreBoardBtnRect
+        {
+            get
+            {
+                return new Rectangle(_graphics.GraphicsDevice.Viewport.Width / 2 - 270, _graphics.GraphicsDevice.Viewport.Height - 200, 145, 183);
+            }
+        }
+        public Button endScoreBoardBtn;
+
+        public string[] deathMsgs;
+        public int deathMsgNum;
+
+        //arrow btns
+        Rectangle upBtn1Rect
+        {
+            get
+            {
+                return new Rectangle(697, 540, 60, 40);
+            }
+        }
+        Rectangle downBtn1Rect
+        {
+            get
+            {
+                return new Rectangle(697, 770, 60, 40);
+            }
+        }
+        Rectangle upBtn2Rect
+        {
+            get
+            {
+                return new Rectangle(_graphics.GraphicsDevice.Viewport.Width/2 - 35, 540, 60, 40);
+            }
+        }
+        Rectangle downBtn2Rect
+        {
+            get
+            {
+                return new Rectangle(_graphics.GraphicsDevice.Viewport.Width / 2 - 35, 770, 60, 40);
+            }
+        }
+        Rectangle upBtn3Rect
+        {
+            get
+            {
+                return new Rectangle(1057, 540, 60, 40);
+            }
+        }
+        Rectangle downBtn3Rect
+        {
+            get
+            {
+                return new Rectangle(1057, 770, 60, 40);
+            }
+        }
+        Button[] arrowBtns;
+        Button upBtn1;
+        Button downBtn1;
+        Button upBtn2;
+        Button downBtn2;
+        Button upBtn3;
+        Button downBtn3;
 
 
+        //for infoScreen
+        Texture2D infoScreenBG;
+        Rectangle xBtnRect
+        {
+            get
+            {
+                return new Rectangle(135, 125, 105, 110);
+            }
+        }
+        public Button xBtn;
 
         //for gameScreen
+        Song gameScreenBGM;
+        List<SoundEffect> soundEffects = new List<SoundEffect>();
+
+        //for scoreboardScreen
+        Texture2D scoreboardScreenBG;
+        Song scoreboardBGM;
+
         public Sprite[] playerSprite;
         public Sprite[] platforms;
         public List<Enemy> enemies;
@@ -130,18 +256,33 @@ namespace GenreShifterProt4
             allGenres[0] = new Genre("Platformer", Content.Load<Texture2D>("Backgrounds/platformerBG"), Content.Load<Texture2D>("Enemies/platformerEnemy"), Content.Load<Texture2D>("Platforms/platformerPlat"), "Jump", false);
             allGenres[1] = new Genre("Adventure", Content.Load<Texture2D>("Backgrounds/adventureBG"), Content.Load<Texture2D>("Enemies/adventureEnemy"), Content.Load<Texture2D>("Platforms/adventurePlat"), "Sword", true);
             allGenres[2] = new Genre("Space Shooter", Content.Load<Texture2D>("Backgrounds/spaceBG"), Content.Load<Texture2D>("Enemies/spaceEnemy"), Content.Load<Texture2D>("Platforms/spacePlat"), "Shoot", true);
-            allGenres[3] = new Genre("gravity", Content.Load<Texture2D>("greenBG"), Content.Load<Texture2D>("greenEnemy"), Content.Load<Texture2D>("greenPlat"), "Change Gravity", false);
         }
 
 
-        protected override void Initialize()
+        protected override void Initialize() /////////////////
         {
             switch (screens[screenNum])
             {
                 case "mainScreen":
+                    fireBaseHelper = new FireBaseHelper();
+                    Stats = new List<PlayerStats>();
+                    thisPlayerStats = new PlayerStats
+                    {
+                        Name = "AAA",
+                        Score = 0,
+                    };
+
+                    playerTextureEnlarger = 0.005f;
+                    playerTextureScale = 2.5f;
+                    break;
+
+                case "infoScreen":
                     break;
 
                 case "gameScreen":
+                    playerName = "AAA".ToCharArray();
+                    Score = 0;
+
                     timeBetweenGames = 15;
                     genreNum = 0;
                     nextGenre = 1;
@@ -178,58 +319,138 @@ namespace GenreShifterProt4
                     break;
 
                 case "endScreen":
-
+                    CreateDeathMsgs();
+                    deathMsgNum = rnd.Next(0, deathMsgs.Length);
+                    //deathMsgNum = 24;
+                    System.Diagnostics.Debug.WriteLine(deathMsgs[deathMsgNum]);
+                    thisPlayerStats.Score = Score;
                     break;
 
                 case "scoreboardScreen":
-
+                    Task<List<PlayerStats>> TaskList = Task.Run(() => fireBaseHelper.GetAllStats());
+                    var newStats = Task.Run(() => TaskList).Result;
+                    Stats = newStats.OrderByDescending(o => o.Score).ToList();
                     break;
             }
-
-            //timeBetweenGames = 15;
-            //genreNum = 0;
-            //nextGenre = 1;
-
-            //fakeTime = new int[15] { 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
-            //fakeSeconds = 1;
-            //switcher = 0;
-
-            ////playerJumpHelper = 0;
-            //playerInAir = false;
-            //playerJumpingSpeed = 0;
-            //playerOnPlat = new bool[2] { false, false };
-            //hitJump = false;
-
-            //playerHP = 3;
-            //isInvis = false;
-
-            //numOfEnemies = 1;
-            //enemySpeedChanger = 0.03f;
-            //enemySpeed = 0;
-
-            //swordStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 100 - 80));
-            //swordTextureNum = 0;
-
-            //beamStartPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 + 76), (_graphics.GraphicsDevice.Viewport.Height - 83 - 80));
-            //greenBeamStartPos = new Vector2((baseScreenSize.X / 2 + 1), baseScreenSize.Y / 2 - 75);
-            //redBeamTextureNum = 0;
-            //canShoot = true;
-            //beamDirection = "left";
-
-            //isWalking = false;
-
-            //continuePressed = false;
 
             base.Initialize();
         }
 
-        protected override void LoadContent()
+        public void CreateDeathMsgs()
         {
+            deathMsgs = new string[]
+            {
+                "\"gg\"",
+                "\"get gooder\"",
+                "\"well well well\"",
+                "\"rage incoming\"",
+                "\"you didn’t have to die\"",
+                "\"your death goes BRRRRRR\"",
+                "\"Death is temporary. Victory is permanent!\"",
+                "\"insert death message here\"",
+                "\"tip: don't die\"",
+                "\"____ <- Your heart beat\"",
+                "\"It's not lag, buddy\"",
+                "\"another one bites the dust\"",
+                "\"gg ez\"",
+                "\"get rektttt\"",
+                "\"Gone, reduced to atoms\"",
+                "\"The most pathetic 17 seconds ever\"",
+                "\"from zero to... still zero i guess?\"",
+                "\"Grief is the price we pay for love\"",
+                "\"Nothing in life is promised except death\"",
+                "\"No one here gets out alive\"",
+                "\"People's Dreams... Have No Ends!!\"",
+                "\"Only I Can Call My Dream Stupid!\"",
+                "\"I Won’t Die, Partner\"",
+                "\"The weak can't decide how they die.\"",
+                "\"Never gonna give you up\"",//num 24
+                "\"Death is never an apology.\"",
+                "\"Never lose sight of your goal\"",
+                "\"What keeps me alive is my soul\"",
+                "\"Fools are likely to repeat the past\"",
+                "\"Its okay to cry, but you have to move on\"",
+                "\"Death is the greatest of all blessings\"",
+                "\"what was was, was was\"",
+                "\"well it had to happen eventually\"",
+                "\"Enjoy bbq with kobe\"",
+                "\"From dust, to dust you shall return.\"",
+                "\"Dear diary, today I died\"",
+                "* FACEPALM *",
+                "\"LMAO U SUK\"",
+                "\"You have perished.\"",
+                "\"SORRY, I'M DEAD\"",
+                "\"Go touch some grass please...\"",
+                "\"Amen\"",
+                "\"When u try ur best but u don't succeed\"",
+                "\"I guess your best wasn't good enough\"",
+                "\"The big ADIOS\"",
+                "\"TF was that?\"",
+                "\"See you in Brazil\"",
+                "\"So long, hey Bowser\"",
+                "C F F F E D C G E C",
+                "C G E A B A Ab Bb Ab G F# G",
+            };
+        }
+
+        protected override void LoadContent() ///////////////////////////
+        {
+            switch (screens[screenNum])
+            {
+                case "mainScreen":
+                    if (MediaPlayer.IsRepeating)
+                        break;
+                    MediaPlayer.Volume = 1.0f;
+                    this.mainScreenBGM = Content.Load<Song>("MainScreenBGM");
+                    MediaPlayer.Play(mainScreenBGM);
+                    MediaPlayer.IsRepeating = true;
+                    MediaPlayer.MediaStateChanged += MediaPlayer_MediaStateChanged;
+                    break;
+
+                case "infoScreen":
+                    break;
+
+                case "scoreboardScreen":
+                    MediaPlayer.Volume = 0.6f;
+                    this.scoreboardBGM = Content.Load<Song>("ScoreboardScreenBGM");
+                    MediaPlayer.Play(scoreboardBGM);
+                    MediaPlayer.IsRepeating = true;
+                    MediaPlayer.MediaStateChanged += MediaPlayer_MediaStateChanged;
+                    break;
+
+                case "gameScreen":
+                    MediaPlayer.Volume = 0.6f;
+                    this.gameScreenBGM = Content.Load<Song>("GameScreenBGM");
+                    MediaPlayer.Play(gameScreenBGM);
+                    MediaPlayer.IsRepeating = true;
+                    MediaPlayer.MediaStateChanged += MediaPlayer_MediaStateChanged;
+                    break;
+
+                case "endScreen":
+                    MediaPlayer.Volume = 1.0f;
+                    if (deathMsgNum == 24)
+                        this.endScreenBGM = Content.Load<Song>("RickRoll");
+                    else
+                        this.endScreenBGM = Content.Load<Song>("EndScreenBGM");
+                    MediaPlayer.Play(endScreenBGM);
+                    MediaPlayer.IsRepeating = true;
+                    MediaPlayer.MediaStateChanged += MediaPlayer_MediaStateChanged;
+                    break;
+            }
             baseScreenSize = new Vector2(_graphics.GraphicsDevice.Viewport.Width, _graphics.GraphicsDevice.Viewport.Height);
             ScalePresentationArea();
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            // TODO: use this.Content to load your game content here
+
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/jump")); //0
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/onHead")); //1
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/sword")); //2
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/swordHit")); //3
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/greenShoot")); //4
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/redShoot")); //5
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/shotHit")); //6
+            soundEffects.Add(Content.Load<SoundEffect>("SFX/playerHit")); //7
+
 
             font = Content.Load<SpriteFont>("scoreFont");
             smallFont = Content.Load<SpriteFont>("scoreFontSmall");
@@ -325,7 +546,36 @@ namespace GenreShifterProt4
             };
 
             //main screen
-            startBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/tempStartButtonUnPressed"), Content.Load<Texture2D>("MainScreen/tempStartButtonPressed"), startBtnRect);
+            //playerID = TempStringLoad();
+            startBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/startBtnUnPressed"), Content.Load<Texture2D>("MainScreen/startBtnPressed"), startBtnRect);
+            infoBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/infoBtnUnPressed"), Content.Load<Texture2D>("MainScreen/infoBtnPressed"), infoBtnRect);
+            scoreBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/scoreBtnUnPressed"), Content.Load<Texture2D>("MainScreen/scoreBtnPressed"), scoreBtnRect);
+            mainScreenBG = Content.Load<Texture2D>("MainScreen/mainScreen");
+
+            //info screen
+            xBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("InfoScreen/xBtnUnPressed"), Content.Load<Texture2D>("InfoScreen/xBtnPressed"), xBtnRect);
+            infoScreenBG = Content.Load<Texture2D>("InfoScreen/htpScreen");
+
+            //end screen
+            endScreenBG = Content.Load<Texture2D>("EndScreen/endScreen");
+            homeBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/homeBtnUnPressed"), Content.Load<Texture2D>("EndScreen/homeBtnPressed"), homeBtnRect);
+            playAgainBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/playAgainBtnUnPressed"), Content.Load<Texture2D>("EndScreen/playAgainBtnPressed"), playAgainBtnRect);
+            endScoreBoardBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/endScoreBtnUnPressed"), Content.Load<Texture2D>("EndScreen/endScoreBtnPressed"), endScoreBoardBtnRect);
+            arrowBtns = new Button[]
+            {
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/upBtnUnPressed"), Content.Load<Texture2D>("EndScreen/upBtnPressed"), upBtn1Rect),
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/upBtnUnPressed"), Content.Load<Texture2D>("EndScreen/upBtnPressed"), upBtn2Rect),
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/upBtnUnPressed"), Content.Load<Texture2D>("EndScreen/upBtnPressed"), upBtn3Rect),
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/downBtnUnPressed"), Content.Load<Texture2D>("EndScreen/downBtnPressed"), downBtn1Rect),
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/downBtnUnPressed"), Content.Load<Texture2D>("EndScreen/downBtnPressed"), downBtn2Rect),
+                new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/downBtnUnPressed"), Content.Load<Texture2D>("EndScreen/downBtnPressed"), downBtn3Rect),
+            };
+        }
+
+        private void MediaPlayer_MediaStateChanged(object sender, EventArgs e)
+        {
+            // 0.0f is silent, 1.0f is full volume
+            MediaPlayer.Volume -= 0.1f;
         }
 
         public void ScalePresentationArea()
@@ -340,7 +590,7 @@ namespace GenreShifterProt4
             System.Diagnostics.Debug.WriteLine("Screen Size - Width[" + GraphicsDevice.PresentationParameters.BackBufferWidth + "] Height [" + GraphicsDevice.PresentationParameters.BackBufferHeight + "]");
         }
 
-        protected override void Update(GameTime gameTime)
+        protected override void Update(GameTime gameTime) ///////////////////////////
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
@@ -357,10 +607,46 @@ namespace GenreShifterProt4
                     touchState = TouchPanel.GetState();
                     gamePadState = startBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
                     startBtn.Update(gameTime);
+                    gamePadState = infoBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    infoBtn.Update(gameTime);
+                    gamePadState = scoreBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    scoreBtn.Update(gameTime);
+
+                    if ((playerTextureScale >= 3f && playerTextureEnlarger > 0) ||
+                    (playerTextureScale <= 2.5f && playerTextureEnlarger < 0))
+                        playerTextureEnlarger = playerTextureEnlarger * -1;
+                    playerTextureScale += playerTextureEnlarger;
 
                     if (startBtn.isReleasd)
                     {
                         screenNum = 1;
+                        //TempStringSave(playerID);
+                        //System.Diagnostics.Debug.WriteLine(playerID);
+                        //MediaPlayer.Stop();
+                        Initialize();
+                    }
+
+                    if (infoBtn.isReleasd)
+                    {
+                        screenNum = 4;
+                        Initialize();
+                    }
+
+                    if (scoreBtn.isReleasd)
+                    {
+                        screenNum = 3;
+                        Initialize();
+                    }
+                    break;
+
+                case "infoScreen":
+                    touchState = TouchPanel.GetState();
+                    gamePadState = xBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    xBtn.Update(gameTime);
+
+                    if (xBtn.isReleasd)
+                    {
+                        screenNum = 0;
                         Initialize();
                     }
                     break;
@@ -432,11 +718,80 @@ namespace GenreShifterProt4
                     break;
 
                 case "endScreen":
-
+                    touchState = TouchPanel.GetState();
+                    gamePadState = homeBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    homeBtn.Update(gameTime);
+                    touchState = TouchPanel.GetState();
+                    gamePadState = playAgainBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    playAgainBtn.Update(gameTime);
+                    touchState = TouchPanel.GetState();
+                    gamePadState = endScoreBoardBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    endScoreBoardBtn.Update(gameTime);
+                    if (homeBtn.isReleasd)
+                    {
+                        if (thisPlayerStats.Name != "AAA")
+                            fireBaseHelper.AddStats(thisPlayerStats.Name, thisPlayerStats.Score);
+                        screenNum = 0;
+                        MediaPlayer.IsRepeating = false;
+                        Initialize();
+                    }
+                    if (playAgainBtn.isReleasd)
+                    {
+                        if (thisPlayerStats.Name != "AAA")
+                            fireBaseHelper.AddStats(thisPlayerStats.Name, thisPlayerStats.Score);
+                        screenNum = 1;
+                        Initialize();
+                    }
+                    if (endScoreBoardBtn.isReleasd)
+                    {
+                        if (thisPlayerStats.Name != "AAA")
+                            fireBaseHelper.AddStats(thisPlayerStats.Name, thisPlayerStats.Score);
+                        screenNum = 3;
+                        Initialize();
+                    }
+                    for (int i = 0; i < 6; i++)
+                    {
+                        touchState = TouchPanel.GetState();
+                        gamePadState = arrowBtns[i].GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                        arrowBtns[i].Update(gameTime);
+                        if (arrowBtns[i].isPressed)
+                        {
+                            if (canShoot)
+                            {
+                                //System.Diagnostics.Debug.WriteLine(((int)playerName[0]).ToString());
+                                if (i < 3)//determines if its up or down
+                                {
+                                    if ((int)playerName[i] == 90)
+                                        playerName[i] = (char)65;
+                                    else
+                                        playerName[i] += (char)1;
+                                }
+                                else
+                                {
+                                    if ((int)playerName[i - 3] == 65)
+                                        playerName[i - 3] = (char)90;
+                                    else
+                                        playerName[i - 3] -= (char)1;
+                                }
+                                canShoot = false;
+                            }
+                            ShootCooldown(gameTime);
+                            thisPlayerStats.Name = string.Join("", playerName);
+                            System.Diagnostics.Debug.WriteLine(thisPlayerStats.Name);
+                        }
+                    }
                     break;
 
                 case "scoreboardScreen":
-
+                    touchState = TouchPanel.GetState();
+                    gamePadState = homeBtn.GetState(touchState, GamePad.GetState(PlayerIndex.One));
+                    homeBtn.Update(gameTime);
+                    if (homeBtn.isReleasd)
+                    {
+                        screenNum = 0;
+                        MediaPlayer.IsRepeating = false;
+                        Initialize();
+                    }
                     break;
             }
 
@@ -483,6 +838,7 @@ namespace GenreShifterProt4
                          greenBeams[Beam].IsTouchingTop(playerSprite[0]) ||
                          greenBeams[Beam].IsTouchingBottom(playerSprite[0]))
                 {
+                    soundEffects[7].Play();
                     playerHP -= 1;
                     greenBeams.RemoveAt(Beam);
                     isInvis = true;
@@ -514,6 +870,7 @@ namespace GenreShifterProt4
                             redBeams[Beam].IsTouchingTop(enemies[enemy]) ||
                             redBeams[Beam].IsTouchingBottom(enemies[enemy]))
                         {
+                            soundEffects[6].Play();
                             enemies.RemoveAt(enemy);
                             isInvis = true;
                             playerSprite[0].Color = Color.Gold;
@@ -594,6 +951,7 @@ namespace GenreShifterProt4
                         Sword.IsTouchingTop(enemies[enemy]) ||
                         Sword.IsTouchingBottom(enemies[enemy]))
                     {
+                        soundEffects[3].Play();
                         enemies.RemoveAt(enemy);
                         isInvis = true;
                         playerSprite[0].Color = Color.Gold;
@@ -696,7 +1054,7 @@ namespace GenreShifterProt4
                         enemy.attackTimer += gameTime.ElapsedGameTime;
                         if (enemy.attackTimer.TotalSeconds >= enemy.attackFrequency)
                         {
-                            System.Diagnostics.Debug.WriteLine("shoot");
+                            soundEffects[4].Play();
                             enemy.attackTimer = TimeSpan.FromSeconds(0);
                             enemy.attackFrequency = rnd.Next(1, 6);
                             greenBeamDirectionNum = rnd.Next(1, 5);
@@ -793,6 +1151,7 @@ namespace GenreShifterProt4
                     playerSprite[0].Velocity.Y < 0 && playerSprite[0].IsTouchingBottom(enemies[enemy])) &
                     !isInvis)
                 {
+                    soundEffects[7].Play();
                     playerHP -= 1;
                     enemies.RemoveAt(enemy);
                     isInvis = true;
@@ -804,6 +1163,7 @@ namespace GenreShifterProt4
                 {
                     if (allGenres[genreNum].canUp == true)
                     {
+                        soundEffects[7].Play();
                         playerHP -= 1;
                         enemies.RemoveAt(enemy);
                         isInvis = true;
@@ -811,6 +1171,7 @@ namespace GenreShifterProt4
                     }
                     else
                     {
+                        soundEffects[1].Play();
                         playerInAir = true;
                         hitJump = true;
                         playerJumpingSpeed = -7f;
@@ -1006,6 +1367,7 @@ namespace GenreShifterProt4
                         case "Jump":
                             if (!playerInAir)
                             {
+                                soundEffects[0].Play();
                                 playerOnPlat[0] = false;
                                 playerOnPlat[1] = false;
                                 //System.Diagnostics.Debug.WriteLine("jumping");
@@ -1017,6 +1379,7 @@ namespace GenreShifterProt4
                         case "Sword":
                             if (sword.Count == 0)
                             {
+                                soundEffects[2].Play();
                                 sword.Add(new Sword(swordTextures[swordTextureNum])
                                 {
                                     Position = swordStartPos,
@@ -1032,6 +1395,7 @@ namespace GenreShifterProt4
                         case "Shoot":
                             if (canShoot)
                             {
+                                soundEffects[5].Play();
                                 redBeams.Add(new LazerBeam(redBeamTextures[redBeamTextureNum])
                                 {
                                     Position = beamStartPos,
@@ -1040,7 +1404,7 @@ namespace GenreShifterProt4
                                     Speed = 15f,
                                 });
                                 canShoot = false;
-                                System.Diagnostics.Debug.WriteLine("pew pew");
+                                //System.Diagnostics.Debug.WriteLine("pew pew");
                             }
                             break;
                         default:
@@ -1069,13 +1433,11 @@ namespace GenreShifterProt4
             //        //
             //    }
             //}
-            if (playerHP == 0)
+            if (playerHP == 0)//game over
             {
-                //do game over
-                //test
-                screenNum = 0;
+                screenNum = 2;
+                MediaPlayer.Stop();
                 Initialize();
-                //
             }
 
             wasContinuePressed = continuePressed;
@@ -1113,14 +1475,9 @@ namespace GenreShifterProt4
         }
 
 
-
-
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-            //new Color(114, 132, 255)
-
-            //pageMgr.Draw(this);
 
             switch (screens[screenNum])
             {
@@ -1128,7 +1485,20 @@ namespace GenreShifterProt4
 
                     _spriteBatch.Begin();
 
+                    _spriteBatch.Draw(mainScreenBG, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+                    _spriteBatch.Draw(playerSprite[0]._texture, new Vector2(_graphics.GraphicsDevice.Viewport.Width / 2, _graphics.GraphicsDevice.Viewport.Height / 2 + 30), null, Color.White, -MathHelper.PiOver4/2, new Vector2(75, 75), playerTextureScale, SpriteEffects.None, 0f);
                     startBtn.Draw(_spriteBatch);
+                    infoBtn.Draw(_spriteBatch);
+                    scoreBtn.Draw(_spriteBatch);
+
+                    _spriteBatch.End();
+                    break;
+
+                case "infoScreen":
+                    _spriteBatch.Begin();
+
+                    _spriteBatch.Draw(infoScreenBG, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+                    xBtn.Draw(_spriteBatch);
 
                     _spriteBatch.End();
                     break;
@@ -1144,6 +1514,8 @@ namespace GenreShifterProt4
                     var healthVector2 = new Vector2((_graphics.GraphicsDevice.Viewport.Width - 366), 0);
                     var nextVector2 = new Vector2((healthVector2.X - smallFont.MeasureString("Next:").X - 100), (scoreArea.Y - scoreSize.Y));
                     var nextGenreVector2 = new Vector2((nextVector2.X + (smallFont.MeasureString("Next:").X / 2) - (smallFont.MeasureString(allGenres[nextGenre].name).X / 2)), ((timerArea - timerSize).Y + font.MeasureString(fakeTime[switcher].ToString()).Y - smallFont.MeasureString(allGenres[nextGenre].name).Y));
+
+                    var bat = PowerStatus.BatteryLifePrecent.ToString() + "%";
 
                     _spriteBatch.Begin();
                     _spriteBatch.Draw(allGenres[genreNum].background, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
@@ -1171,6 +1543,8 @@ namespace GenreShifterProt4
                     _spriteBatch.DrawString(smallFont, "Next:", nextVector2, Color.White);
                     _spriteBatch.DrawString(smallFont, allGenres[nextGenre].name, nextGenreVector2, Color.White);
 
+                    _spriteBatch.DrawString(smallFont, bat, new Vector2(20, 170), Color.LawnGreen);
+
 
                     if (touchState.IsConnected)
                         virtualGamePad.Draw(_spriteBatch);
@@ -1179,56 +1553,42 @@ namespace GenreShifterProt4
                     break;
 
                 case "endScreen":
+                    var scorePos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 - font.MeasureString("SCORE:" + Score).X / 2), 40);
 
+                    var deathMsgPos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 - smallFont.MeasureString(deathMsgs[deathMsgNum]).X / 2), 400);
+                    var newName = string.Join(" ", playerName);
+                    var namePos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 - font.MeasureString(newName).X / 2), (_graphics.GraphicsDevice.Viewport.Height / 2 + 60));
+                    //System.Diagnostics.Debug.WriteLine("sdddsds");
+                    //System.Diagnostics.Debug.WriteLine(namePos.X.ToString());
+                    //System.Diagnostics.Debug.WriteLine(namePos.Y.ToString());
+                    //System.Diagnostics.Debug.WriteLine(font.MeasureString(newName).Y.ToString());
+                    _spriteBatch.Begin();
+
+                    _spriteBatch.Draw(endScreenBG, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
+                    _spriteBatch.DrawString(font, "SCORE:" + Score, scorePos, Color.MediumPurple);
+                    _spriteBatch.DrawString(smallFont, deathMsgs[deathMsgNum], deathMsgPos, Color.White);
+                    foreach (var button in arrowBtns)
+                        button.Draw(_spriteBatch);
+                    _spriteBatch.DrawString(font, newName, namePos, Color.CadetBlue);
+                    
+                    homeBtn.Draw(_spriteBatch);
+                    playAgainBtn.Draw(_spriteBatch);
+                    endScoreBoardBtn.Draw(_spriteBatch);
+
+                    _spriteBatch.End();
                     break;
 
                 case "scoreboardScreen":
+                    _spriteBatch.Begin();
 
+                    homeBtn.Draw(_spriteBatch);
+                    _spriteBatch.DrawString(smallFont, Stats[0].Name + Stats[0].Score, new Vector2(0, 600), Color.White);
+                    _spriteBatch.DrawString(smallFont, Stats[1].Name + Stats[1].Score, new Vector2(0, 700), Color.White);
+                    _spriteBatch.DrawString(smallFont, Stats[2].Name + Stats[2].Score, new Vector2(0, 800), Color.White);
+
+                    _spriteBatch.End();
                     break;
             }
-
-            //var widthHalf = _graphics.GraphicsDevice.Viewport.Width / 2;
-            //var heightMax = _graphics.GraphicsDevice.Viewport.Height;
-            //var heightHalf = heightMax / 2;
-            //var timerSize = new Vector2(font.MeasureString(fakeTime[switcher].ToString()).X / 2, font.MeasureString(fakeTime[switcher].ToString()).Y / 2);
-            //var timerArea = new Vector2(widthHalf, 75);
-            //var scoreSize = new Vector2(0, font.MeasureString("SCORE").Y / 2);
-            //var scoreArea = new Vector2(50, 75);
-            //var healthVector2 = new Vector2((_graphics.GraphicsDevice.Viewport.Width - 366), 0);
-            //var nextVector2 = new Vector2((healthVector2.X - smallFont.MeasureString("Next:").X - 100), (scoreArea.Y - scoreSize.Y));
-            //var nextGenreVector2 = new Vector2( (nextVector2.X + (smallFont.MeasureString("Next:").X / 2) - (smallFont.MeasureString(allGenres[nextGenre].name).X / 2)), ((timerArea - timerSize).Y + font.MeasureString(fakeTime[switcher].ToString()).Y - smallFont.MeasureString(allGenres[nextGenre].name).Y));
-
-            //_spriteBatch.Begin();
-            //_spriteBatch.Draw(allGenres[genreNum].background, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
-
-            //foreach (var sprite in platforms)
-            //    sprite.Draw(_spriteBatch);
-            //foreach (var sprite in enemies)
-            //    sprite.Draw(_spriteBatch);
-            //foreach (var sprite in playerSprite)
-            //    sprite.Draw(_spriteBatch);
-            //foreach (var sprite in sword)
-            //    sprite.Draw(_spriteBatch);
-            //foreach (var sprite in redBeams)
-            //    sprite.Draw(_spriteBatch);
-            //foreach (var sprite in greenBeams)
-            //    sprite.Draw(_spriteBatch);
-
-
-
-            //_spriteBatch.Draw(scoreBarSprite, new Vector2(0, 0), Color.Black);
-            //_spriteBatch.DrawString(font, fakeTime[switcher].ToString(), (timerArea - timerSize), Color.Red);
-            ////game._spriteBatch.DrawString(font, "NEXT GENRE:", new Vector2((widthHalf + 100), 0), null, Color.White, 0f, 0.5f);
-            //_spriteBatch.DrawString(font, "SCORE:"+ Score,(scoreArea - scoreSize), Color.White);
-            //_spriteBatch.Draw(playerHPTextures[playerHP], healthVector2, Color.White);
-            //_spriteBatch.DrawString(smallFont, "Next:", nextVector2, Color.White);
-            //_spriteBatch.DrawString(smallFont, allGenres[nextGenre].name, nextGenreVector2, Color.White);
-
-
-            //if (touchState.IsConnected)
-            //    virtualGamePad.Draw(_spriteBatch);
-
-            //_spriteBatch.End();
 
             base.Draw(gameTime);
         }

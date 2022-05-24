@@ -51,6 +51,7 @@ namespace GenreShifterProt4
             else //pressed
             {
                 currentTexture = pressedTexture;
+                //System.Diagnostics.Debug.WriteLine("aughhhh");
                 isPressed = true;
                 releaseHelper++;
             }
@@ -59,12 +60,6 @@ namespace GenreShifterProt4
         public void Draw(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(currentTexture, new Vector2(buttonPosition.X, buttonPosition.Y), null, Color.White, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-            //spriteBatch.Draw(gamePadTexture, new Vector2(256, baseScreenSize.Y - 384), null, color, 0, spriteCenter, 1, SpriteEffects.None, 0);//up
-            //spriteBatch.Draw(gamePadTexture, new Vector2(128, baseScreenSize.Y - 256), null, color, -MathHelper.PiOver2, spriteCenter, 1, SpriteEffects.None, 0);//left
-            //spriteBatch.Draw(gamePadTexture, new Vector2(384, baseScreenSize.Y - 256), null, color, MathHelper.PiOver2, spriteCenter, 1, SpriteEffects.None, 0);//right
-            //spriteBatch.Draw(gamePadTexture, new Vector2(256, baseScreenSize.Y - 128), null, color, 2 * MathHelper.PiOver2, spriteCenter, 1, SpriteEffects.None, 0);//down
-            //spriteBatch.Draw(connectorTexture, new Vector2(256, baseScreenSize.Y - 256), null, color, 0, spriteCenter, 1, SpriteEffects.None, 0);//connector
-            //spriteBatch.Draw(actionButtonTexture, new Vector2(baseScreenSize.X - 320, baseScreenSize.Y - 352), null, color, 0, Vector2.Zero, 1.5f, SpriteEffects.None, 0);//action
         }
 
         /// <summary>
@@ -82,8 +77,6 @@ namespace GenreShifterProt4
                     //Scale the touch position to be in _baseScreenSize coordinates
                     Vector2 pos = touch.Position;
                     Vector2.Transform(ref pos, ref globalTransformation, out pos);
-
-
 
                     if (pos.X >= buttonPosition.X &&
                         pos.X <= buttonPosition.Right &&

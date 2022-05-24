@@ -27,34 +27,6 @@ namespace GenreShifterProt4.Sprites
 
         public override void Update(GameTime gameTime, Sprite[] sprites)
         {
-            //gamePadState = Input.GetState(touchState, GamePad.GetState(PlayerIndex.One));
-            //Move();
-
-            //foreach (var sprite in sprites)
-            //{
-            //    if (sprite == this)
-            //        continue;
-
-            //    if (this.Velocity.X > 0 && this.IsTouchingLeft(sprite) ||
-            //        this.Velocity.X < 0 && this.IsTouchingRight(sprite))
-            //    {
-            //        this.Velocity.X = 0;
-            //        System.Diagnostics.Debug.WriteLine("hit left or right!");
-            //        //check what it hit
-            //    }
-
-            //    if (this.Velocity.Y > 0 && this.IsTouchingTop(sprite))
-            //    {
-            //        this.Velocity.Y = 0;
-            //        System.Diagnostics.Debug.WriteLine("touch top");
-            //        //check what it hit
-            //    }
-            //    if (this.Velocity.Y < 0 && this.IsTouchingBottom(sprite))
-            //    {
-            //        this.Velocity.Y = 0;
-            //        //check what it hit
-            //    }
-            //}
 
             switch (Direction)
             {

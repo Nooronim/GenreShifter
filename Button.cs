@@ -13,7 +13,7 @@ namespace GenreShifterProt4
         private readonly Texture2D unPressedTexture;
         private readonly Texture2D pressedTexture;
         //private readonly Vector2 buttonPosition;
-        private readonly Rectangle buttonPosition;
+        public  Rectangle buttonPosition { get; set; }
 
         private float secondsSinceLastInput;
 

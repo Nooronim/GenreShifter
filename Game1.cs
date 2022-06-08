@@ -546,7 +546,6 @@ namespace GenreShifterProt4
             };
 
             //main screen
-            //playerID = TempStringLoad();
             startBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/startBtnUnPressed"), Content.Load<Texture2D>("MainScreen/startBtnPressed"), startBtnRect);
             infoBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/infoBtnUnPressed"), Content.Load<Texture2D>("MainScreen/infoBtnPressed"), infoBtnRect);
             scoreBtn = new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("MainScreen/scoreBtnUnPressed"), Content.Load<Texture2D>("MainScreen/scoreBtnPressed"), scoreBtnRect);
@@ -570,6 +569,14 @@ namespace GenreShifterProt4
                 new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/downBtnUnPressed"), Content.Load<Texture2D>("EndScreen/downBtnPressed"), downBtn2Rect),
                 new Button(baseScreenSize, globalTransformation, Content.Load<Texture2D>("EndScreen/downBtnUnPressed"), Content.Load<Texture2D>("EndScreen/downBtnPressed"), downBtn3Rect),
             };
+
+            //scoreboard
+            scoreboardScreenBG = Content.Load<Texture2D>("ScoreboardBG");
+            if (screens[screenNum] == "scoreboardScreen")
+            {
+                homeBtn.buttonPosition = new Rectangle(50, 50, 145, 183);
+            }
+
         }
 
         private void MediaPlayer_MediaStateChanged(object sender, EventArgs e)
@@ -1579,12 +1586,23 @@ namespace GenreShifterProt4
                     break;
 
                 case "scoreboardScreen":
+                    var firstNamePos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 - smallFont.MeasureString(Stats[0].Name).X / 2),520);
+                    var firstScorePos = new Vector2((_graphics.GraphicsDevice.Viewport.Width / 2 - smallFont.MeasureString(Stats[0].Score.ToString()).X / 2),580);
+                    var secondNamePos = new Vector2((1197 - smallFont.MeasureString(Stats[2].Name).X / 2), 620);
+                    var secondScorePos = new Vector2((1197 - smallFont.MeasureString(Stats[0].Score.ToString()).X / 2), 680);
+                    var thirdNamePos = new Vector2((627 - smallFont.MeasureString(Stats[1].Name).X / 2), 720);
+                    var thirdScorePos = new Vector2((627 - smallFont.MeasureString(Stats[0].Score.ToString()).X / 2), 780);
+
                     _spriteBatch.Begin();
 
+                    _spriteBatch.Draw(scoreboardScreenBG, new Vector2(0, 0), null, Color.White, 0f, Vector2.Zero, 1, SpriteEffects.None, 0f);
                     homeBtn.Draw(_spriteBatch);
-                    _spriteBatch.DrawString(smallFont, Stats[0].Name + Stats[0].Score, new Vector2(0, 600), Color.White);
-                    _spriteBatch.DrawString(smallFont, Stats[1].Name + Stats[1].Score, new Vector2(0, 700), Color.White);
-                    _spriteBatch.DrawString(smallFont, Stats[2].Name + Stats[2].Score, new Vector2(0, 800), Color.White);
+                    _spriteBatch.DrawString(smallFont, Stats[0].Name, firstNamePos, Color.DodgerBlue);
+                    _spriteBatch.DrawString(smallFont, Stats[0].Score.ToString(), firstScorePos, Color.White);
+                    _spriteBatch.DrawString(smallFont, Stats[1].Name, secondNamePos, Color.DodgerBlue);
+                    _spriteBatch.DrawString(smallFont, Stats[1].Score.ToString(), secondScorePos, Color.White);
+                    _spriteBatch.DrawString(smallFont, Stats[2].Name, thirdNamePos, Color.DodgerBlue);
+                    _spriteBatch.DrawString(smallFont, Stats[2].Score.ToString(), thirdScorePos, Color.White);
 
                     _spriteBatch.End();
                     break;
